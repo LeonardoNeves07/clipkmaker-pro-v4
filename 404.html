@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>ClipMaker PRO</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://upload-widget.cloudinary.com/latest/global/all.js"></script>
+
+</head>
+
+<body class="bg-slate-950 text-white min-h-screen flex flex-col items-center p-10">
+
+<h1 class="text-4xl font-bold mb-8">
+ClipMaker PRO
+</h1>
+
+<button id="upload"
+class="bg-blue-600 px-8 py-3 rounded-lg text-lg">
+Upload Vídeo
+</button>
+
+<div id="loading" class="hidden mt-6">
+IA analisando vídeo...
+</div>
+
+<div id="results"
+class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-10 w-full max-w-6xl"></div>
+
+<script>
+
+const cloudName = "dbtwrlrll"
+const uploadPreset = "upload_nlw"
+
+const loading = document.getElementById("loading")
+const results = document.getElementById("results")
+
+function render(url){
+
+const card = document.createElement("div")
+
+card.className="bg-slate-900 p-4 rounded-xl"
+
+card.innerHTML=`
+
+<video src="${url}" controls class="w-full rounded-lg"></video>
+
+<a href="${url}" download
+class="block bg-blue-600 mt-3 text-center py-2 rounded">
+Baixar Clip
+</a>
+`
+
+results.appendChild(card)
+
+}
+
+const widget = cloudinary.createUploadWidget(
+{
+cloudName,
+uploadPreset
+},
+async (error,result)=>{
+
+if(result && result.event==="success"){
+
+loading.classList.remove("hidden")
+
+const public_id = result.info.public_id
+
+try{
+
+const response = await fetch("/generate",{method:"POST"})
+
+if(!response.ok){
+throw new Error("Erro servidor")
+}
+
+const moments = await response.json()
+
+moments.forEach(m=>{
+
+const url =
+`https://res.cloudinary.com/${cloudName}/video/upload/${m}/${public_id}.mp4`
+
+render(url)
+
+})
+
+}catch(e){
+
+console.error(e)
+alert("Erro ao gerar clips")
+
+}
+
+loading.classList.add("hidden")
+
+}
+
+}
+)
+
+document.getElementById("upload").onclick=()=>{
+widget.open()
+}
+
+</script>
+
+</body>
+
+</html>
